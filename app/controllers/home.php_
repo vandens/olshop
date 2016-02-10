@@ -1,0 +1,292 @@
+<?php if ( ! defined('BASEPATH')) exit('No direct script access allowed');
+
+class Home extends CI_Controller {
+	/*
+	Created By 		: Vandens Mc Maddens
+	Created Date 	: March 20, 2014
+	Creator Sites 	: www.cld.biz 
+	*/
+
+    public function __construct()
+    {
+        parent::__construct();
+		$d = $this->db->get('t_setting')->result_array();
+		foreach ($d as $key) {
+			foreach ($key as $k => $v) {
+				$x[$k] = $v;
+			}
+		}
+
+
+		 $x['sql'] 	 		= $this->db->select('count(b.auto) as jml, b.auto as id_merk, a.*')
+							   				->from('t_kategori a')
+							   				->join('t_merk b','a.auto = b.id_cat','left')
+							   				->group_by('a.auto')
+							   				->order_by('kategori ASC')
+							   				->get()->result_array();
+
+		$x['sqlx']	= $this->db->order_by('RAND()')->get('t_runtext')->result_array();
+		$x['sqly']	= $this->db->order_by('add_date DESC')->limit(10)->order_by('RAND()')->get('t_produk')->result_array();
+		$x['chat'] 	= $this->db->where('level',2)->get('t_user')->result_array();
+		return $x;
+    }
+
+	function index()
+	{
+		$x = $this->__construct();
+		$x['menu']			= 'home';
+		$x['error']			= '';
+		$sql2 				= $this->db->query("SELECT auto,foto FROM t_produk where is_promo = '1' order by RAND() limit 5");
+		$x['panel_kiri'] 	= $this->load->view('panel_kiri',array('sql'=>$x['sql']),true);
+		$sql 				= $this->db->limit('9')->where('is_terlaris',1)->get('t_produk');
+		$x['panel_tengah']	= $this->load->view('panel_tengah',array('sql'=>$sql,'sql2'=>$sql2),true);
+		$x['panel_kanan'] 	= $this->load->view('panel_kanan',array('sqly'=>$x['sqly'],'chat'=>$x['chat']),true);
+		$this->load->view('mainpage',$x);
+	}
+
+	public function tentang()
+	{		
+		$x = $this->__construct();
+		$x['menu']			= 'tentang';
+		$x['error']			= '';
+		$x['panel_kiri'] 	= $this->load->view('panel_kiri',array('sql'=>$x['sql']),true);
+		$sql = $this->db->where('auto','1')->get('t_other')->result();
+		$x['panel_tengah']	= $this->load->view('other',array('sql'=>$sql),true);
+		$x['panel_kanan'] 	= '';
+		$this->load->view('mainpage',$x);
+	}
+
+	public function order()
+	{		
+		$x = $this->__construct();
+		$x['menu']			= 'order';
+		$x['error']			= '';
+		$x['panel_kiri'] 	= $this->load->view('panel_kiri',array('sql'=>$x['sql']),true);
+		$sql = $this->db->where('auto','3')->get('t_other')->result();
+		$x['panel_tengah']	= $this->load->view('other',array('sql'=>$sql),true);
+		$x['panel_kanan'] 	= '';
+		$this->load->view('mainpage',$x);
+	}
+
+
+	public function katalog()
+	{
+		$x = $this->__construct();
+		$x['menu']			= 'katalog';
+
+		switch ($this->input->post('submit')) {
+		 	case 'cari':
+					$sql 	 	 		= $this->db->DISTINCT()
+								   		->select('a.*, a.auto as auto, b.nama_merk, c.kategori')
+								   		->from('t_produk a')
+								   		->join('t_merk b','a.id_merk=b.auto','left')
+								   		->join('t_kategori c','b.id_cat=c.auto','left')
+								   		->like('b.nama_merk',$this->input->post('key'))
+								   		->or_like('c.kategori',$this->input->post('key'))
+								   		->or_like('a.nama_produk',$this->input->post('key'))
+								   		->or_like('a.harga',$this->input->post('key'))
+								   		->get();			
+		 		break;
+
+			default:
+					if($this->uri->segment(3)){
+						$sql 	 	 		= $this->db->DISTINCT()
+									   		->select('a.*, a.auto as auto, b.nama_merk, c.kategori')
+									   		->from('t_produk a')
+									   		->join('t_merk b','a.id_merk=b.auto','left')
+									   		->join('t_kategori c','b.id_cat=c.auto','left')
+									   		->where('c.kategori',$this->uri->segment(3))
+									   		->or_where('a.id_merk',$this->uri->segment(3))
+									   		->limit('36')
+									   		->get();
+					}else{
+						$sql 	= $this->db->limit('36')->get('t_produk');
+					}
+
+				break;
+		}
+
+		$x['error']			= '';
+		$x['panel_kiri'] 	= '';
+		$x['panel_tengah']	= $this->load->view('katalog',array('sql'=>$sql),true);
+		$x['panel_kanan']	= '';
+		$this->load->view('mainpage',$x);
+	}
+
+	public function detail(){
+		$x = $this->__construct();
+		$x['menu']			= 'katalog';
+		$x['error']			= '';
+		$sql2				= $this->db->where('auto',$this->uri->segment(3))->get('t_produk');
+		$sql3 				= $this->db->limit('12')->order_by('RAND()')->get('t_produk');
+		$x['panel_kiri'] 	= $this->load->view('panel_kiri',array('sql'=>$x['sql'],'sqly'=>$x['sqly']),true);
+		$x['panel_tengah']	= $this->load->view('katalog_detail',array('sql2'=>$sql2,'sql3'=>$sql3),true);
+		$x['panel_kanan']	= '';
+		$this->load->view('mainpage',$x);
+	}
+
+
+	public function kontak()
+	{
+		$x = $this->__construct();
+		$x['menu']			= 'kontak';
+		$x['error']			= '';
+		$x['panel_kiri'] 	= $this->load->view('panel_kiri',array('sql'=>$x['sql']),true);
+		$sql = $this->db->where('auto','2')->get('t_other')->result();
+		$x['panel_tengah']	= $this->load->view('other',array('sql'=>$sql),true);
+		$x['panel_kanan'] 	= '';
+		$this->load->view('mainpage',$x);
+	}
+
+	public function testimoni()
+	{
+		$x = $this->__construct();
+		$x['menu']			= 'testimoni';
+		$x['error']			= '';
+		$sql2 = $this->db->where('status',2)->limit('6')->get('t_testimoni');
+		switch ($this->input->post('submit')) {
+			case 'simpan':
+				$a = $this->input->post('param1');
+				$b = $this->input->post('param2');
+				$c = $this->input->post('param3');
+				if($a == ''){
+					$error = 'Nama tidak boleh kosong';
+					$x['panel_tengah']	= $this->load->view('testimoni',array('error'=>$error,'sql2'=>$sql2),true);
+				}elseif($b == ''){
+					$error = 'Alamat email tidak boleh kosong';
+					$x['panel_tengah']	= $this->load->view('testimoni',array('error'=>$error,'sql2'=>$sql2),true);
+				}else{
+					$sql = $this->db->insert('t_testimoni',
+											array('nama'=>$a, 'email'=>$b,'pesan'=>$c,'add_date'=>date('Y-m-d H:i:s'), 'status'=>1));
+					$x['panel_tengah']	= $this->load->view('testimoni',array('error'=>'Pesan berhasil disimpan, terima kasih','sql2'=>$sql2),true);
+				}
+
+				break;
+			
+			default:
+					
+				$x['panel_tengah']	= $this->load->view('testimoni',array('error'=>'','sql2'=>$sql2),true);
+				break;
+		}
+
+		$x['panel_kiri'] 	= $this->load->view('panel_kiri',array('sql'=>$x['sql']),true);
+		$x['panel_kanan'] 	= $this->load->view('panel_kanan',array('sqly'=>$x['sqly'],'chat'=>$x['chat']),true);
+		$this->load->view('mainpage',$x);
+	}
+
+	public function harga()
+	{
+		
+		$x = $this->__construct();
+
+		$x['menu']			= 'harga';
+		$x['error']			= '';
+		$katalog 	 		= $this->db->DISTINCT()
+									   ->select('a.*, b.nama_merk, c.kategori')
+									   ->from('t_produk a')
+									   ->join('t_merk b','a.id_merk=b.auto','left')
+									   ->join('t_kategori c','b.id_cat=c.auto','left')
+									   ->limit('25')
+									   ->get();
+
+		$x['panel_kiri'] 	= $this->load->view('panel_kiri',array('sql'=>$x['sql']),true);
+		$x['panel_tengah']	= $this->load->view('daftar_harga',array('sql'=>$katalog),true);
+		$x['panel_kanan'] 	= $this->load->view('panel_kanan',array('sqly'=>$x['sqly'],'chat'=>$x['chat']),true);
+		$this->load->view('mainpage',$x);
+	}
+
+
+	function live_chat(){
+		switch ($this->input->post('submit')) {
+			case 'register':
+				$x['to'] 	= $this->input->post('to');
+				$this->load->view('live_chat_register',$x);
+				break;
+			
+			case 'start':
+					$param1 = $this->input->post('param1');
+					$param2 = $this->input->post('param2');
+					$param3 = $this->input->post('param3');
+					$param4 = $this->input->post('param4');
+
+
+					$id 	= substr(md5($param1.date('Y-m-d H:i:s')), 0,10);
+
+					$sql = $this->db->insert('t_chat',
+											 array('auto'		=> $id,
+											 	   'dari'		=> $param1,
+											 	   'email'		=> $param2,
+											 	   'kepada'		=> $param4,
+											 	   'pertanyaan'	=> $param3,
+											 	   'date_start'	=> date('Y-m-d H:i:s'),
+											 	   'status'		=> 1));
+					if($sql){
+						// $jdl['topik'] 	= $param3;
+						// $jdl['key']		= $id;
+						// $jdl['sender']	= $param1;
+						// $this->load->view('live_chatting',$jdl);
+						redirect(base_url('home/chatting/'.$id));
+					}
+
+				break;
+
+			default:
+					$x['chat'] 	= $this->db->where('level',2)->get('t_user')->result_array();
+					$this->load->view('live_chat',$x);
+				break;
+		}
+			
+	}
+
+	function chatting(){
+
+		if($this->uri->segment(3) && !$this->input->post('submit')){
+			$key = $this->uri->segment(3);
+			$sql = $this->db->where('auto',$key)->get('t_chat');
+			foreach ($sql->result() as $v) {
+				foreach ($v as $k => $val) {
+					$x[$k] = $val;
+				}
+			}
+			
+			$this->load->view('live_chatting',$x);
+
+		}elseif($this->input->post('submit') == 'sendmsg'){
+					$key 	= $this->input->post('key');
+					$msg 	= $this->input->post('msg');
+					$sender	= ($this->session->userdata('is_login') == TRUE) ? $this->session->userdata('nama') : $this->input->post('sender');
+					$sql 	= $this->db->insert('t_chatting',
+														array('id_chat'		=> $key,
+															  'message'		=> $msg,
+															  'sender'		=> $sender,
+															  'send_date'	=> date('Y-m-d H:i:s')));
+					$sql2 	= $this->db->where('id_chat',$key)->order_by('send_date ASC')->get('t_chatting');
+					foreach ($sql2->result() as $val) {
+						$class = ($val->sender == $sender) ? 'pull-left' : 'pull-right';
+						echo '<blockquote class="'.$class.'">
+							  <p>'.$val->sender.'</p>
+							  <small style="color:white;">'.$val->message.'<cite title="Source Title"> | Pada : '.$val->send_date.'</cite></small>
+							  </blockquote>';	
+					}
+		}else{
+				$key 	= $this->input->post('key');
+				$sender	= $this->input->post('sender');
+				$sql2 	= $this->db->where('id_chat',$key)->order_by('send_date ASC')->get('t_chatting');
+					foreach ($sql2->result() as $val)
+					{
+						$class = 'pull-left'; //($val->sender == $sender) ? 'pull-left' : 'pull-right';
+						echo '<blockquote class="'.$class.'">
+							  <p>'.$val->sender.'</p>
+							  <small style="color:white;">'.$val->message.'<cite title="Source Title"> | Pada : '.$val->send_date.'</cite></small>
+							  </blockquote>';	
+					}
+		}
+
+
+	}
+
+
+}
+
+/* End of file home.php */
+/* Location: ./application/controllers/home.php */

@@ -1,0 +1,8 @@
+ .alert{
+	display:none;
+ }
+ 
+ .loading{
+	display:none;
+	padding:15px;
+ }
